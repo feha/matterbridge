@@ -64,6 +64,7 @@ const (
 	outgoingWebhookConfig = "WebhookURL"
 	skipTLSConfig         = "SkipTLSVerify"
 	useNickPrefixConfig   = "PrefixMessagesWithNick"
+	noUserSpoofing        = "NoUserSpoofing"
 	editDisableConfig     = "EditDisable"
 	editSuffixConfig      = "EditSuffix"
 	iconURLConfig         = "iconurl"
@@ -532,8 +533,8 @@ func (b *Bslack) uploadFile(msg *config.Message, channelID string) (string, erro
 
 func (b *Bslack) prepareMessageOptions(msg *config.Message) []slack.MsgOption {
 	params := slack.NewPostMessageParameters()
-	if b.GetBool(useNickPrefixConfig) {
-		params.AsUser = true
+	if b.GetBool(noUserSpoofing) {
+		params.AsUser = true // This flag appears to disable user-spoofing when using a non-classic bot
 	}
 	params.Username = msg.Username
 	params.LinkNames = 1 // replace mentions

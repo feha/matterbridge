@@ -88,6 +88,7 @@ type ChannelMembers []ChannelMember
 
 type Protocol struct {
 	AllowMention           []string // discord
+	AppToken               string   // slack
 	AuthCode               string   // steam
 	BindAddress            string   // mattermost, slack // DEPRECATED
 	Buffer                 int      // api
@@ -134,6 +135,7 @@ type Protocol struct {
 	NoHomeServerSuffix     bool       // matrix
 	NoSendJoinPart         bool       // all protocols
 	NoTLS                  bool       // mattermost, xmpp
+	NoUserSpoofing         bool       // slack
 	Password               string     // IRC,mattermost,XMPP,matrix
 	PrefixMessagesWithNick bool       // mattemost, slack
 	PreserveThreading      bool       // slack
@@ -163,7 +165,6 @@ type Protocol struct {
 	TeamID                 string     // msteams
 	TenantID               string     // msteams
 	Token                  string     // gitter, slack, discord, api, matrix
-	AppToken               string     // slack
 	Topic                  string     // zulip
 	URL                    string     // mattermost, slack // DEPRECATED
 	UseAPI                 bool       // mattermost, slack
