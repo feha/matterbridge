@@ -112,6 +112,9 @@ func (b *Bslack) Connect() error {
 	// If we have a token we use the Slack websocket-based RTM for both sending and receiving.
 	if token := b.GetString(tokenConfig); token != "" {
 		b.Log.Info("Connecting using token")
+		if b.GetBool(noUserSpoofing) {
+			b.Log.Infof("%s: `NoUserSpoofing=true` while in RTM (Token) mode - User spoofing has been disabled for this bridge.", b.Account)
+		}
 
 		appToken := b.GetString(appTokenConfig)
 		b.sc = slack.New(token, slack.OptionDebug(b.GetBool("Debug")), slack.OptionAppLevelToken(appToken))
