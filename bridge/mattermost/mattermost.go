@@ -136,8 +136,13 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 		return b.cacheAvatar(&msg)
 	}
 
+	// ! Webhooks can't edit messages, so Token's EditMessage need to take precedence when possible.
+	if msg.Event == "" && msg.ID != "" { // Wants to edit the msg
+		msg.Event = "msg_edit" // set an arbitrary value to make it skip the webhook entirely
+	}
+
 	// Use webhook to send the message
-	if b.GetString("WebhookURL") != "" {
+	if b.GetString("WebhookURL") != "" && msg.Event == "" {
 		return b.sendWebhook(msg)
 	}
 
@@ -186,7 +191,7 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 
 	// Edit message if we have an ID
 	if msg.ID != "" {
-		return b.mc.EditMessage(msg.ID, msg.Text)
+		return b.mc.EditMessage(msg.ID, msg.Text) // ? consider using b.mc.Client.PatchPost
 	}
 
 	// Post normal message
