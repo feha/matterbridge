@@ -2,7 +2,10 @@ package bmattermost
 
 import (
 	"net/http"
+	"encoding/json"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/42wim/matterbridge/bridge/config"
 	"github.com/42wim/matterbridge/bridge/helper"
@@ -10,6 +13,13 @@ import (
 	"github.com/matterbridge/matterclient"
 	"github.com/mattermost/mattermost/server/public/model"
 )
+
+type PropIdentifier struct {
+	Id string `json:"matterbridge_webhook_identifier"`
+}
+type Props struct {
+	PropIdentifier
+}
 
 func (b *Bmattermost) doConnectWebhookBind() error {
 	switch {
@@ -162,12 +172,58 @@ func (b *Bmattermost) sendWebhook(msg config.Message) (string, error) {
 		matterMessage.IconURL = msg.Avatar
 	}
 	matterMessage.Props["matterbridge_"+b.uuid] = true
+
+	// Store current time to use as the `since` filter for GetRecentMsgId's API call (GetPostsSince)
+	// It appears quite likely for the machine running matterbridge to be over 10 seconds ahead of the server,
+	//  so offsetting timestamp by one magnitude greater than that (-100 seconds)
+	offset := -100 * time.Second
+	ts_before_send := time.Now().Add(offset).UnixMilli()
+
+	// Generate a unique identifier used by GetRecentMsgId to identify the message we are creating.
+	// Using a timestamp as a low-efford identifier that's 'unique' because we got one already anyway, and its conventional for matterbridge
+	Id := fmt.Sprintf("%d", ts_before_send)
+	if propData, err := json.Marshal(PropIdentifier{Id: Id}); err != nil {
+		return "", err
+	} else if err := json.Unmarshal(propData, &matterMessage.Props); err != nil {
+		return "", err
+	}
+	
 	err := b.mh.Send(matterMessage)
 	if err != nil {
 		b.Log.Info(err)
 		return "", err
 	}
-	return "", nil
+
+	mID, err := b.GetRecentMsgId(&msg, Id, ts_before_send)
+	if err != nil {
+		b.Log.Warn(err)
+		return "", err
+	}
+
+	return mID, nil
+}
+
+func (b *Bmattermost) GetRecentMsgId(msg *config.Message, Id string, ts_since int64) (string, error) {
+	postList := b.mc.GetPostsSince(b.getChannelID(msg.Channel), ts_since)
+	if postList == nil {
+		return "", fmt.Errorf("Unknown error in GetPostsSince API call")
+	}
+
+	// Find the post that matches the exact message text
+	for _, post := range postList.Posts {
+		var prop PropIdentifier
+		if propData, err := json.Marshal(post.GetProps()); err != nil {
+			return "", err
+		} else if err := json.Unmarshal(propData, &prop); err != nil {
+			return "", err
+		}
+
+		if prop.Id == Id {
+			return post.Id, nil
+		}
+	}
+
+	return "", fmt.Errorf("Did not find target message.")
 }
 
 // skipMessages returns true if this message should not be handled

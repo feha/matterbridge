@@ -33,11 +33,12 @@ func (b *Bslack) populateReceivedMessage(ev *slack.MessageEvent) (*config.Messag
 		rmsg.Channel = "ID:" + channel.ID
 	}
 
-	// Handle 'edit' messages.
+	// Handle 'edit' messages. // ? consider removing this section and handle edit's entirely in handleStatusEvent
 	if ev.SubMessage != nil && !b.GetBool(editDisableConfig) {
 		rmsg.ID = ev.SubMessage.Timestamp
 		if ev.SubMessage.ThreadTimestamp != ev.SubMessage.Timestamp {
 			b.Log.Debugf("SubMessage %#v", ev.SubMessage)
+			// this line is duplicate code with handleStatusEvent, which overrides this line
 			rmsg.Text = ev.SubMessage.Text + b.GetString(editSuffixConfig)
 		}
 	}

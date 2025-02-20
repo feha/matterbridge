@@ -398,7 +398,11 @@ func (b *Bslack) handleStatusEvent(ev *slack.MessageEvent, rmsg *config.Message)
 		b.channels.populateChannels(false)
 		rmsg.Event = config.EventTopicChange
 	case sMessageChanged:
+		// this line is duplicate code with populateReceivedMessage, where this overrides it
 		rmsg.Text = ev.SubMessage.Text
+		if !b.GetBool(editDisableConfig) {
+			rmsg.Text = ev.SubMessage.Text + b.GetString(editSuffixConfig)
+		}
 		// handle deleted thread starting messages
 		if ev.SubMessage.Text == "This message was deleted." {
 			rmsg.Event = config.EventMsgDelete
