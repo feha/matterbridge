@@ -12,6 +12,7 @@ import (
 	"github.com/42wim/matterbridge/bridge/helper"
 	"github.com/42wim/matterbridge/matterhook"
 	"github.com/matterbridge/matterclient"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/rs/xid"
 )
 
@@ -191,7 +192,15 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 
 	// Edit message if we have an ID
 	if msg.ID != "" {
-		return b.mc.EditMessage(msg.ID, msg.Text) // ? consider using b.mc.Client.PatchPost
+		// Must use the mattermost API's PatchPost-route to edit messages when user-spoofing is enabled,
+		//  as the UpdatePost-route (which is invoked by matterclient.EditMessage) removes any existing user-spoofing.
+		patch := &model.PostPatch{Message: &msg.Text}
+		res, _, err := b.mc.Client.PatchPost(context.TODO(), msg.ID, patch)
+		if err != nil {
+			return "", err
+		}
+		return res.Id, nil
+		// return b.mc.EditMessage(msg.ID, msg.Text)
 	}
 
 	// Post normal message
