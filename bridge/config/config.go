@@ -138,6 +138,7 @@ type Protocol struct {
 	NoUserSpoofing         bool       // slack
 	Password               string     // IRC,mattermost,XMPP,matrix
 	PrefixMessagesWithNick bool       // mattemost, slack
+	PreferSpoofOverThread  bool       // mattemost
 	PreserveThreading      bool       // slack
 	Protocol               string     // all protocols
 	QuoteDisable           bool       // telegram
