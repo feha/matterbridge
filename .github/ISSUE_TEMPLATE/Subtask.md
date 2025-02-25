@@ -1,0 +1,7 @@
+---
+name: Subtask
+about: Creates a sub-task/-issue used internally to track progress on tasks
+labels: internal
+title: [subtask: ] 
+
+---
