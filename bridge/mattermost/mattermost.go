@@ -28,6 +28,19 @@ type Bmattermost struct {
 	channelInfoMap map[string]*config.ChannelInfo
 }
 
+const (
+	tokenConfig           = "Token"
+	incomingWebhookConfig = "WebhookBindAddress"
+	outgoingWebhookConfig = "WebhookURL"
+	preferSpoofOverThread = "PreferSpoofOverThread"
+	skipTLSConfig         = "SkipTLSVerify"
+	useNickPrefixConfig   = "PrefixMessagesWithNick"
+	editDisableConfig     = "EditDisable"
+	editSuffixConfig      = "EditSuffix"
+	iconURLConfig         = "iconurl"
+	noSendJoinConfig      = "nosendjoinpart"
+)
+
 const mattermostPlugin = "mattermost.plugin"
 
 func New(cfg *bridge.Config) bridge.Bridger {
@@ -138,8 +151,14 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 	}
 
 	// ! Webhooks can't edit messages, so Token's EditMessage need to take precedence when possible.
-	if msg.Event == "" && msg.ID != "" { // Wants to edit the msg
+	// Wants to edit the msg
+	if msg.Event == "" && msg.ID != "" {
 		msg.Event = "msg_edit" // set an arbitrary value to make it skip the webhook entirely
+	}
+	// ! Webhooks can't post in threads, need to choose either: spoof via webhook or threads via API
+	// Wants to reply to a thread
+	if !b.GetBool(preferSpoofOverThread) && msg.Event == "" && msg.ParentID != "" {
+		msg.Event = "msg_reply" // set an arbitrary value to make it skip the webhook entirely
 	}
 
 	// Use webhook to send the message
