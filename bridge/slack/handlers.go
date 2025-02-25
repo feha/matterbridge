@@ -174,6 +174,13 @@ func (b *Bslack) handleSlackClientSocketMode(messages chan *config.Message) {
 			}
 			var payload interface{}
 			b.smc.Ack(*evt.Request, payload)
+		case socketmode.EventTypeIncomingError:
+			errorEvent, ok := evt.Data.(*slack.IncomingEventError)
+			if !ok {
+				b.Log.Errorf("Received an 'incoming_error' event, but failed type assertion: %+v", evt.Data)
+				continue
+			}
+			b.Log.Errorf("Received an 'incoming_error' event. Error: %+v", errorEvent)
 		case "hello":
 			continue
 		default:
